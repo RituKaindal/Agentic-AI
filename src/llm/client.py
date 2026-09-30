@@ -1,12 +1,11 @@
-"""LLM client using LiteLLM for multi-provider support."""
+"""LLM client using OpenAI-compatible API."""
 
 import json
 import logging
-import os
 from functools import lru_cache
-from typing import Any, TypeVar
+from typing import TypeVar
 
-import litellm
+from openai import AsyncOpenAI
 from pydantic import BaseModel
 
 from src.config import get_settings
@@ -17,7 +16,7 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class LLMClient:
-    """LLM client with structured output support via LiteLLM."""
+    """LLM client with structured output support via OpenAI-compatible API."""
 
     def __init__(self, model: str | None = None):
         """Initialize LLM client.
@@ -28,17 +27,14 @@ class LLMClient:
         """
         settings = get_settings()
         self.model = model or settings.llm_model
-        self.api_key = settings.openai_api_key
+        self.api_key = settings.get_api_key()
         self.base_url = settings.openai_base_url
 
-        # Configure LiteLLM for OpenAI-compatible endpoint (FICO AI Gateway)
-        litellm.set_verbose = False
-
-        # Set environment variables for LiteLLM to use custom base URL
-        if self.api_key:
-            os.environ["OPENAI_API_KEY"] = self.api_key
-        if self.base_url:
-            os.environ["OPENAI_API_BASE"] = self.base_url
+        # Initialize OpenAI client with FICO AI Gateway
+        self.client = AsyncOpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+        )
 
     async def complete(
         self,
@@ -57,16 +53,11 @@ class LLMClient:
             The assistant's response text.
         """
         try:
-            # Use openai/ prefix to route through OpenAI-compatible API
-            model = f"openai/{self.model}" if not self.model.startswith(("openai/", "anthropic/", "bedrock/")) else self.model
-
-            response = await litellm.acompletion(
-                model=model,
+            response = await self.client.chat.completions.create(
+                model=self.model,
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                api_key=self.api_key,
-                api_base=self.base_url,
             )
             return response.choices[0].message.content or ""
         except Exception as e:

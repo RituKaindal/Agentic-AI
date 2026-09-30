@@ -87,10 +87,8 @@ async def process_github_review(
 
     if post_comments and result.findings:
         try:
-            async with provider as p:
-                pass
-            commit_sha = pr.metadata.source_branch
-            await provider.post_review(owner, repo, pr_number, result, commit_sha)
+            commit_sha = pr.metadata.head_sha
+            await provider.post_review(owner, repo, pr_number, result, commit_sha, pr.files)
             logger.info(f"Posted review to GitHub PR {pr_number}")
         except Exception as e:
             logger.error(f"Failed to post GitHub review: {e}")
@@ -116,13 +114,30 @@ async def process_bitbucket_review(
 
     if post_comments and result.findings:
         try:
-            commit_sha = pr.metadata.source_branch
+            commit_sha = pr.metadata.head_sha
             await provider.post_review(project, repo, pr_id, result, commit_sha)
             logger.info(f"Posted review to Bitbucket PR {pr_id}")
         except Exception as e:
             logger.error(f"Failed to post Bitbucket review: {e}")
 
     return result
+
+
+@app.get("/")
+async def root():
+    """Root endpoint with API info."""
+    return {
+        "service": "PR Review Agent",
+        "version": "0.1.0",
+        "description": "Multi-agent AI-powered PR review system",
+        "endpoints": {
+            "health": "GET /health",
+            "review": "POST /review",
+            "github_webhook": "POST /webhook/github",
+            "bitbucket_webhook": "POST /webhook/bitbucket",
+        },
+        "docs": "/docs",
+    }
 
 
 @app.get("/health")
@@ -150,8 +165,10 @@ async def manual_review(request: ManualReviewRequest):
 
         if request.post_comments and result.findings:
             parts = pr.metadata.repository.split("/")
-            commit_sha = pr.metadata.source_branch
-            await provider.post_review(parts[0], parts[1], pr.metadata.id, result, commit_sha)
+            commit_sha = pr.metadata.head_sha
+            await provider.post_review(
+                parts[0], parts[1], pr.metadata.id, result, commit_sha, pr.files
+            )
 
         return ReviewResponse(
             pr_id=result.pr_id,

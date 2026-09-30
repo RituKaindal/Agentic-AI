@@ -277,6 +277,7 @@ class BitbucketProvider(PRProvider):
         pr_number: int | str,
         result: ReviewResult,
         commit_sha: str,
+        pr_files: list[PRFile] | None = None,
     ) -> dict:
         """Post a complete review with summary and inline comments."""
         await self.post_review_comment(
