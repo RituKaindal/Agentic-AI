@@ -69,6 +69,7 @@ class PRMetadata(BaseModel):
     author: str = Field(description="PR author username")
     source_branch: str = Field(description="Source/head branch name")
     target_branch: str = Field(description="Target/base branch name")
+    head_sha: str = Field(default="", description="Head commit SHA")
     url: str = Field(description="URL to the PR")
     provider: PRProvider = Field(description="PR provider (github/bitbucket)")
     repository: str = Field(description="Repository full name (owner/repo)")

@@ -1,9 +1,29 @@
 """Configuration management for PR Review Agent."""
 
+import subprocess
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def get_fico_api_key() -> str | None:
+    """Get FICO API key from helper script."""
+    helper_path = Path.home() / ".claude" / "fico" / "fico-api-key-helper"
+    if helper_path.exists():
+        try:
+            result = subprocess.run(
+                [str(helper_path)],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+        except Exception:
+            pass
+    return None
 
 
 class Settings(BaseSettings):
@@ -15,6 +35,13 @@ class Settings(BaseSettings):
     llm_model: str = Field(default="claude-sonnet-4-6", alias="LLM_MODEL")
     openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
     openai_base_url: str = Field(default="https://llm.ai.fico.com", alias="OPENAI_BASE_URL")
+
+    def get_api_key(self) -> str:
+        """Get API key, trying FICO helper first."""
+        fico_key = get_fico_api_key()
+        if fico_key:
+            return fico_key
+        return self.openai_api_key or ""
 
     # GitHub Configuration
     github_token: str | None = Field(default=None, alias="GITHUB_TOKEN")
