@@ -1,0 +1,31 @@
+{
+  "action": "opened",
+  "number": 123,
+  "pull_request": {
+    "number": 123,
+    "title": "Add user authentication feature",
+    "body": "This PR adds basic user authentication to the application.\n\n## Changes\n- Added login endpoint\n- Added session management\n- Added password hashing",
+    "user": {
+      "login": "developer"
+    },
+    "head": {
+      "ref": "feature/auth",
+      "sha": "abc123def456"
+    },
+    "base": {
+      "ref": "main"
+    },
+    "html_url": "https://github.com/test/repo/pull/123",
+    "created_at": "2024-01-15T10:30:00Z",
+    "labels": [
+      {"name": "feature"},
+      {"name": "security"}
+    ]
+  },
+  "repository": {
+    "name": "repo",
+    "owner": {
+      "login": "test"
+    }
+  }
+}
